@@ -25,14 +25,7 @@ public class CustomerFacade extends ClientFacade {
 
         try {
             if (CUSTOMERS_DAO.isCustomerExists(email, password)) {
-
-                for (Customer customer : CUSTOMERS_DAO.getAllCustomers()) {
-
-                    if (customer.getEmail().equals(email)) {
-                        customerID = customer.getId();
-                    }
-                }
-
+                customerID = CUSTOMERS_DAO.getOneCustomer(email).getId();
                 return true;
 
             } else {

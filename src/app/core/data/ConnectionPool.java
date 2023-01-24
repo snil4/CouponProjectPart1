@@ -52,6 +52,10 @@ public class ConnectionPool {
                     if (!connection.isClosed()) {
                         connections.remove(connection);
                         return connection;
+
+                    } else {
+                        connections.remove(connection);
+                        connections.add(DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD));
                     }
                 }
 
@@ -79,16 +83,13 @@ public class ConnectionPool {
     public synchronized void closeAllConnections() throws CouponSystemException {
 
         try {
-            while (true) {
-                if (connections.size() == CONNECTIONS_NUM) {
-                    // Checking if all the connections are back in the list
-                    for (Connection connection : connections) {
-                        connection.close();
-                    }
-                    break;
-                } else {
-                    throw new CouponSystemException("Not all the connections are in the list");
+            if (connections.size() == CONNECTIONS_NUM) {
+                // Checking if all the connections are back in the list
+                for (Connection connection : connections) {
+                    connection.close();
                 }
+            } else {
+                throw new CouponSystemException("Not all the connections are in the list");
             }
         } catch (SQLException e) {
             throw new CouponSystemException("Can't close all connections", e);

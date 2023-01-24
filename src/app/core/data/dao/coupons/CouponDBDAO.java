@@ -19,6 +19,46 @@ public class CouponDBDAO implements CouponsDAO {
         connectionPool = ConnectionPool.getInstance();
     }
 
+    public boolean isCouponExists(String title) throws DAOException {
+        Connection connection;
+        try {
+            connection = connectionPool.getConnection();
+        } catch (CouponSystemException e) {
+            throw new DAOException("Can't get a connection ", e);
+        }
+
+        try {
+            PreparedStatement statement = connection.prepareStatement("SELECT * FROM coupons WHERE title = ?");
+            statement.setString(1,title);
+            ResultSet resultSet = statement.executeQuery();
+            return resultSet.next();
+        } catch (SQLException e) {
+            throw new DAOException("Bad SQL request ", e);
+        } finally {
+            connectionPool.restoreConnection(connection);
+        }
+    }
+
+    public boolean isCouponExists(int id) throws DAOException {
+        Connection connection;
+        try {
+            connection = connectionPool.getConnection();
+        } catch (CouponSystemException e) {
+            throw new DAOException("Can't get a connection ", e);
+        }
+
+        try {
+            PreparedStatement statement = connection.prepareStatement("SELECT * FROM coupons WHERE id = ?");
+            statement.setInt(1,id);
+            ResultSet resultSet = statement.executeQuery();
+            return resultSet.next();
+        } catch (SQLException e) {
+            throw new DAOException("Bad SQL request ", e);
+        } finally {
+            connectionPool.restoreConnection(connection);
+        }
+    }
+
     @Override
     public void addCoupon(Coupon coupon) throws DAOException {
 
@@ -119,6 +159,29 @@ public class CouponDBDAO implements CouponsDAO {
         }
     }
 
+    public void deleteCouponsByCompany(int companyId) throws DAOException {
+
+        Connection connection;
+        try {
+            connection = connectionPool.getConnection();
+
+        } catch (CouponSystemException e) {
+            throw new DAOException("Can't get a connection ", e);
+        }
+
+        try {
+            PreparedStatement statement = connection.prepareStatement("DELETE FROM coupons WHERE companyId = ?");
+            statement.setInt(1, companyId);
+            statement.executeUpdate();
+
+        } catch (SQLException e) {
+            throw new DAOException("Can't delete coupons for company with id " + companyId + ": ", e);
+
+        } finally {
+            connectionPool.restoreConnection(connection);
+        }
+    }
+
     @Override
     public ArrayList<Coupon> getAllCoupons() throws DAOException {
 
@@ -135,6 +198,143 @@ public class CouponDBDAO implements CouponsDAO {
             Statement statement = connection.createStatement();
 
             ResultSet resultSet = statement.executeQuery("SELECT * FROM coupons");
+
+            while (resultSet.next()) {
+
+                int id = resultSet.getInt("id");
+                int companyID = resultSet.getInt("company_id");
+                Category category = Category.valueOf(resultSet.getString("category"));
+                String title = resultSet.getString("title");
+                String description = resultSet.getString("description");
+                LocalDate start_date = resultSet.getDate("start_date").toLocalDate();
+                LocalDate end_date = resultSet.getDate("end_date").toLocalDate();
+                int amount = resultSet.getInt("amount");
+                double price = resultSet.getDouble("price");
+                String image = resultSet.getString("image");
+
+                Coupon coupon = new Coupon(id, companyID, category, title, description, start_date, end_date, amount,
+                        price, image);
+                coupons.add(coupon);
+            }
+
+            return coupons;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Can't get all coupons: ", e);
+
+        } finally {
+            connectionPool.restoreConnection(connection);
+        }
+
+    }
+
+    public ArrayList<Coupon> getAllCompanyCoupons(int companyId) throws DAOException {
+
+        Connection connection;
+        try {
+            connection = connectionPool.getConnection();
+
+        } catch (CouponSystemException e) {
+            throw new DAOException("Can't get a connection ", e);
+        }
+
+        try {
+            ArrayList<Coupon> coupons = new ArrayList<>();
+            PreparedStatement statement = connection.prepareStatement("SELECT * FROM coupons WHERE company_id = ?");
+            statement.setInt(1,companyId);
+            ResultSet resultSet = statement.executeQuery();
+
+            while (resultSet.next()) {
+
+                int id = resultSet.getInt("id");
+                int companyID = resultSet.getInt("company_id");
+                Category category = Category.valueOf(resultSet.getString("category"));
+                String title = resultSet.getString("title");
+                String description = resultSet.getString("description");
+                LocalDate start_date = resultSet.getDate("start_date").toLocalDate();
+                LocalDate end_date = resultSet.getDate("end_date").toLocalDate();
+                int amount = resultSet.getInt("amount");
+                double price = resultSet.getDouble("price");
+                String image = resultSet.getString("image");
+
+                Coupon coupon = new Coupon(id, companyID, category, title, description, start_date, end_date, amount,
+                        price, image);
+                coupons.add(coupon);
+            }
+
+            return coupons;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Can't get all coupons: ", e);
+
+        } finally {
+            connectionPool.restoreConnection(connection);
+        }
+
+    }
+
+    public ArrayList<Coupon> getAllCompanyCoupons(int companyId, double maxPrice) throws DAOException {
+
+        Connection connection;
+        try {
+            connection = connectionPool.getConnection();
+
+        } catch (CouponSystemException e) {
+            throw new DAOException("Can't get a connection ", e);
+        }
+
+        try {
+            ArrayList<Coupon> coupons = new ArrayList<>();
+            PreparedStatement statement = connection.prepareStatement("SELECT * FROM coupons WHERE company_id = ? AND price < ?");
+            statement.setInt(1,companyId);
+            statement.setDouble(2,maxPrice);
+            ResultSet resultSet = statement.executeQuery();
+
+            while (resultSet.next()) {
+
+                int id = resultSet.getInt("id");
+                int companyID = resultSet.getInt("company_id");
+                Category category = Category.valueOf(resultSet.getString("category"));
+                String title = resultSet.getString("title");
+                String description = resultSet.getString("description");
+                LocalDate start_date = resultSet.getDate("start_date").toLocalDate();
+                LocalDate end_date = resultSet.getDate("end_date").toLocalDate();
+                int amount = resultSet.getInt("amount");
+                double price = resultSet.getDouble("price");
+                String image = resultSet.getString("image");
+
+                Coupon coupon = new Coupon(id, companyID, category, title, description, start_date, end_date, amount,
+                        price, image);
+                coupons.add(coupon);
+            }
+
+            return coupons;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Can't get all coupons: ", e);
+
+        } finally {
+            connectionPool.restoreConnection(connection);
+        }
+
+    }
+
+    public ArrayList<Coupon> getAllCompanyCoupons(int companyId, Category couponCategory) throws DAOException {
+
+        Connection connection;
+        try {
+            connection = connectionPool.getConnection();
+
+        } catch (CouponSystemException e) {
+            throw new DAOException("Can't get a connection ", e);
+        }
+
+        try {
+            ArrayList<Coupon> coupons = new ArrayList<>();
+            PreparedStatement statement = connection.prepareStatement("SELECT * FROM coupons WHERE company_id = ? AND category = ?");
+            statement.setInt(1,companyId);
+            statement.setString(2, couponCategory.name());
+            ResultSet resultSet = statement.executeQuery();
 
             while (resultSet.next()) {
 
@@ -209,14 +409,51 @@ public class CouponDBDAO implements CouponsDAO {
         }
     }
 
-    public ArrayList<Coupon> getCustomerCoupons(int customerID) throws DAOException {
-        ArrayList<Coupon> coupons = new ArrayList<>();
 
-        for (CouponPurchase couponPurchase : getCouponPurchasesByCustomer(customerID)) {
-            coupons.add(getOneCoupon(couponPurchase.getCouponID()));
+    @Override
+    public ArrayList<Coupon> getCustomerCoupons(int customerId) throws DAOException {
+
+        Connection connection;
+        try {
+            connection = connectionPool.getConnection();
+
+        } catch (CouponSystemException e) {
+            throw new DAOException("Can't get a connection ", e);
         }
 
-        return coupons;
+        try {
+            ArrayList<Coupon> coupons = new ArrayList<>();
+            PreparedStatement statement = connection.prepareStatement("SELECT * FROM coupons WHERE id IN (SELECT coupon_id FROM customers_vs_coupons WHERE customer_id = ?)");
+            statement.setInt(1,customerId);
+            ResultSet resultSet = statement.executeQuery();
+
+            while (resultSet.next()) {
+
+                int id = resultSet.getInt("id");
+                int companyID = resultSet.getInt("company_id");
+                Category category = Category.valueOf(resultSet.getString("category"));
+                String title = resultSet.getString("title");
+                String description = resultSet.getString("description");
+                LocalDate start_date = resultSet.getDate("start_date").toLocalDate();
+                LocalDate end_date = resultSet.getDate("end_date").toLocalDate();
+                int amount = resultSet.getInt("amount");
+                double price = resultSet.getDouble("price");
+                String image = resultSet.getString("image");
+
+                Coupon coupon = new Coupon(id, companyID, category, title, description, start_date, end_date, amount,
+                        price, image);
+                coupons.add(coupon);
+            }
+
+            return coupons;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Can't get all coupons: ", e);
+
+        } finally {
+            connectionPool.restoreConnection(connection);
+        }
+
     }
 
     @Override
@@ -323,6 +560,29 @@ public class CouponDBDAO implements CouponsDAO {
         } catch (SQLException e) {
             throw new DAOException("Can't remove coupon purchase ", e);
 
+        } finally {
+            connectionPool.restoreConnection(connection);
+        }
+    }
+
+    public void deleteCouponPurchaseByCompany(int companyId) throws DAOException {
+        Connection connection;
+
+        try {
+            connection = connectionPool.getConnection();
+        } catch (CouponSystemException e) {
+            throw new DAOException("Can't get a connection", e);
+        }
+
+        try {
+            PreparedStatement statement = connection.prepareStatement(
+                    "DELETE FROM customers_vs_coupons WHERE coupon_id IN (SELECT id FROM coupons WHERE company_id = ?)"
+            );
+            statement.setInt(1,companyId);
+            statement.executeUpdate();
+
+        } catch (SQLException e) {
+            throw new DAOException("Can't remove coupon purchases from company with id " + companyId + ": ",e);
         } finally {
             connectionPool.restoreConnection(connection);
         }

@@ -23,7 +23,6 @@ public class AdminFacade extends ClientFacade {
     @Override
     public boolean login(String email, String password) {
         return email.equals(this.EMAIL) && (password.equals(this.PASSWORD));
-
     }
 
 
@@ -35,14 +34,8 @@ public class AdminFacade extends ClientFacade {
     public void addCompany(Company company) throws FacadeException {
 
         try {
-            for (Company check : COMPANIES_DAO.getAllCompanies()) {
-
-                if (check.getName().equals(company.getName())) {
-                    throw new FacadeException("A company with the same name already exists.");
-
-                } else if (check.getEmail().equals(company.getEmail())) {
-                    throw new FacadeException("A company with the same email already exists.");
-                }
+            if (COMPANIES_DAO.isCompanyExistByEmail(company.getEmail()) || COMPANIES_DAO.isCompanyExistByName(company.getName())) {
+                throw new FacadeException("A company with the same email or name already exists");
             }
 
             COMPANIES_DAO.addCompany(company);
@@ -63,16 +56,12 @@ public class AdminFacade extends ClientFacade {
 
         try {
             Company check = COMPANIES_DAO.getOneCompany(company.getId());
-
             if (check != null) {
                 company.setName(check.getName());
-
             } else {
                 throw new FacadeException("Company with ID " + company.getId() + "Doesn't exist.");
             }
-
             COMPANIES_DAO.updateCompany(company);
-
         } catch (DAOException e) {
             throw new FacadeException();
         }
@@ -90,11 +79,8 @@ public class AdminFacade extends ClientFacade {
             if (COMPANIES_DAO.getOneCompany(companyID) != null) {
 
                 if (COMPANIES_DAO.getOneCompany(companyID).getCoupons() != null) {
-                    for (Coupon coupon : COMPANIES_DAO.getOneCompany(companyID).getCoupons()) {
-                        COUPON_DAO.deleteCoupon(coupon.getId());
-                        COUPON_DAO.deleteCouponPurchase(coupon.getId());
-
-                    }
+                    COUPON_DAO.deleteCouponPurchaseByCompany(companyID);
+                    COUPON_DAO.deleteCouponsByCompany(companyID);
                 }
 
                 COMPANIES_DAO.deleteCompany(companyID);
@@ -141,13 +127,9 @@ public class AdminFacade extends ClientFacade {
     public void addCustomer(Customer customer) throws FacadeException {
         try {
 
-            for (Customer check : CUSTOMERS_DAO.getAllCustomers()) {
-
-                if (customer.getEmail().equals(check.getEmail())) {
+                if (CUSTOMERS_DAO.isCustomerExists(customer.getEmail())) {
                     throw new FacadeException("Customer with the same email already exists");
-
                 }
-            }
 
             CUSTOMERS_DAO.addCustomer(customer);
 
@@ -177,13 +159,9 @@ public class AdminFacade extends ClientFacade {
     public void deleteCustomer(int customerID) throws FacadeException {
         try {
             Customer customer = CUSTOMERS_DAO.getOneCustomer(customerID);
-
             if (customer != null) {
-
                 if (customer.getCoupons() != null) {
-                    for (Coupon coupon : customer.getCoupons()) {
-                        COUPON_DAO.deleteCouponPurchase(customerID, coupon.getId());
-                    }
+                        COUPON_DAO.deleteCouponPurchase(customerID);
                 }
 
                 CUSTOMERS_DAO.deleteCustomer(customerID);

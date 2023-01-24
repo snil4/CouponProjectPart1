@@ -24,21 +24,61 @@ public class CompaniesDBDAO implements CompaniesDAO {
         }
 
         try {
-            Statement statement = connection.createStatement();
-            ResultSet resultSet = statement.executeQuery("SELECT * FROM companies");
+            PreparedStatement statement = connection.prepareStatement("SELECT * FROM companies WHERE email = ? AND password = ?");
+            statement.setString(1,email);
+            statement.setString(2,password);
+            ResultSet resultSet = statement.executeQuery();
 
-            while (resultSet.next()) {
+            return resultSet.next();
 
-                for (Company company : getAllCompanies()) {
+        } catch (SQLException | RuntimeException e) {
+            throw new DAOException("Can't find company: ", e);
 
-                    if (company.getEmail().equals(resultSet.getString("email")) &&
-                            company.getPassword().equals(resultSet.getString("password"))) {
-                        return true;
+        } finally {
+            connectionPool.restoreConnection(connection);
+        }
+    }
 
-                    }
-                }
-            }
-            return false;
+
+    public boolean isCompanyExistByEmail(String email) throws DAOException {
+
+        Connection connection;
+        try {
+            connection = connectionPool.getConnection();
+        } catch (CouponSystemException e) {
+            throw new DAOException(e);
+        }
+
+        try {
+            PreparedStatement statement = connection.prepareStatement("SELECT * FROM companies WHERE email = ?");
+            statement.setString(1,email);
+            ResultSet resultSet = statement.executeQuery();
+
+            return resultSet.next();
+
+        } catch (SQLException | RuntimeException e) {
+            throw new DAOException("Can't find company: ", e);
+
+        } finally {
+            connectionPool.restoreConnection(connection);
+        }
+    }
+
+    public boolean isCompanyExistByName(String name) throws DAOException {
+
+        Connection connection;
+        try {
+            connection = connectionPool.getConnection();
+        } catch (CouponSystemException e) {
+            throw new DAOException(e);
+        }
+
+        try {
+            PreparedStatement statement = connection.prepareStatement("SELECT * FROM companies WHERE name = ?");
+            statement.setString(1,name);
+            ResultSet resultSet = statement.executeQuery();
+
+            return resultSet.next();
 
         } catch (SQLException | RuntimeException e) {
             throw new DAOException("Can't find company: ", e);
@@ -194,6 +234,41 @@ public class CompaniesDBDAO implements CompaniesDAO {
 
             } else {
                 throw new DAOException("Can't get company from id " + companyID);
+            }
+
+        } catch (SQLException e) {
+            throw new DAOException("Can't get company: ", e);
+
+        } finally {
+            connectionPool.restoreConnection(connection);
+        }
+    }
+
+    public Company getOneCompany(String companyEmail) throws DAOException {
+
+        Connection connection;
+        try {
+            connection = connectionPool.getConnection();
+        } catch (CouponSystemException e) {
+            throw new DAOException(e);
+        }
+
+        try {
+            PreparedStatement statement = connection.prepareStatement("SELECT * FROM companies WHERE email = ?");
+            statement.setString(1, companyEmail);
+            ResultSet resultSet = statement.executeQuery();
+
+            if (resultSet.next()) {
+
+                int id = resultSet.getInt("id");
+                String name = resultSet.getString("name");
+                String email = resultSet.getString("email");
+                String password = resultSet.getString("password");
+
+                return new Company(id, name, email, password);
+
+            } else {
+                throw new DAOException("Can't get company with email " + companyEmail);
             }
 
         } catch (SQLException e) {

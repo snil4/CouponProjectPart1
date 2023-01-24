@@ -25,21 +25,36 @@ public class CustomersDBDAO implements CustomersDAO {
         }
 
         try {
-            Statement statement = connection.createStatement();
-            ResultSet resultSet = statement.executeQuery("SELECT * FROM customers");
+            PreparedStatement statement = connection.prepareStatement("SELECT * FROM customers WHERE email = ? AND password = ?");
+            statement.setString(1,email);
+            statement.setString(2,password);
+            ResultSet resultSet = statement.executeQuery();
 
-            while (resultSet.next()) {
+            return resultSet.next();
 
-                for (Customer customer : getAllCustomers()) {
+        } catch (SQLException e) {
+            throw new DAOException("Can't find customer: ", e);
 
-                    if (customer.getEmail().equals(resultSet.getString("email")) &&
-                            customer.getPassword().equals(resultSet.getString("password"))) {
-                        return true;
+        } finally {
+            connectionPool.restoreConnection(connection);
+        }
+    }
 
-                    }
-                }
-            }
-            return false;
+    public boolean isCustomerExists(String email) throws DAOException {
+
+        Connection connection;
+        try {
+            connection = connectionPool.getConnection();
+        } catch (CouponSystemException e) {
+            throw new DAOException(e);
+        }
+
+        try {
+            PreparedStatement statement = connection.prepareStatement("SELECT * FROM customers WHERE email = ?");
+            statement.setString(1,email);
+            ResultSet resultSet = statement.executeQuery();
+
+            return resultSet.next();
 
         } catch (SQLException e) {
             throw new DAOException("Can't find customer: ", e);
@@ -203,6 +218,46 @@ public class CustomersDBDAO implements CustomersDAO {
 
             } else {
                 throw new DAOException("Can't get company from id " + customerID);
+            }
+
+        } catch (SQLException e) {
+            throw new DAOException("Can't get company: ", e);
+
+        } finally {
+            connectionPool.restoreConnection(connection);
+        }
+    }
+
+    public Customer getOneCustomer(String customerEmail) throws DAOException {
+
+        Connection connection;
+        try {
+            connection = connectionPool.getConnection();
+        } catch (CouponSystemException e) {
+            throw new DAOException(e);
+        }
+
+        try {
+            PreparedStatement statement = connection.prepareStatement("SELECT * FROM customers WHERE email = ?");
+            statement.setString(1, customerEmail);
+
+            ResultSet resultSet = statement.executeQuery();
+
+            if (resultSet.next()) {
+
+                int id = resultSet.getInt("id");
+                String first_name = resultSet.getString("first_name");
+                String last_name = resultSet.getString("last_name");
+                String email = resultSet.getString("email");
+                String password = resultSet.getString("password");
+
+                Customer customer = new Customer(id, first_name, last_name, email, password);
+                customer.setCoupons(couponDBDAO.getCustomerCoupons(id));
+
+                return customer;
+
+            } else {
+                throw new DAOException("Can't get company from email " + customerEmail);
             }
 
         } catch (SQLException e) {

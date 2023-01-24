@@ -22,17 +22,9 @@ public class CompanyFacade extends ClientFacade {
 
     @Override
     public boolean login(String email, String password) throws FacadeException {
-
         try {
             if (COMPANIES_DAO.isCompanyExist(email, password)) {
-                for (Company company : COMPANIES_DAO.getAllCompanies()) {
-
-                    if (company.getEmail().equals(email)) {
-                        companyID = company.getId();
-
-                    }
-                }
-
+                companyID = COMPANIES_DAO.getOneCompany(email).getId();
                 return true;
 
             } else {
@@ -51,17 +43,15 @@ public class CompanyFacade extends ClientFacade {
      */
     public void addCoupon(Coupon coupon) throws FacadeException {
         try {
+
+            if (COUPON_DAO.isCouponExists(coupon.getTitle())) {
+                throw new FacadeException("Coupon with the same title already exists");
+            }
+
             Company company = COMPANIES_DAO.getOneCompany(companyID);
             ArrayList<Coupon> coupons = company.getCoupons();
 
-            if (coupons != null) {
-                for (Coupon check : coupons) {
-                    if (check.getTitle().equals(coupon.getTitle())) {
-                        throw new FacadeException("Can't add coupon, coupon with the same name already exists in " +
-                                "company");
-                    }
-                }
-            } else {
+            if (coupons == null) {
                 coupons = new ArrayList<>();
             }
 
@@ -83,23 +73,12 @@ public class CompanyFacade extends ClientFacade {
     public void updateCoupon(Coupon coupon) throws FacadeException {
         try {
             Company company = COMPANIES_DAO.getOneCompany(companyID);
-            ArrayList<Coupon> coupons = getCompanyCoupons();
-            boolean found = false;
+            ArrayList<Coupon> coupons = COUPON_DAO.getAllCoupons();
+            Coupon newCoupon = COUPON_DAO.getOneCoupon(coupon.getId());
 
-            for (Coupon check : coupons) {
-
-                if (check.getId() == coupon.getId()) {
-                    coupon.setCompanyID(check.getCompanyID());
-                    coupons.remove(check);
-                    coupons.add(coupon);
-                    found = true;
-                    break;
-                }
-            }
-
-            if (!found) {
-                throw new FacadeException("No coupon was found for this company");
-            }
+            coupon.setCompanyID(newCoupon.getCompanyID());
+            coupons.remove(newCoupon);
+            coupons.add(coupon);
 
             company.setCoupons(coupons);
             COMPANIES_DAO.updateCompany(company);
@@ -120,19 +99,15 @@ public class CompanyFacade extends ClientFacade {
             Company company = COMPANIES_DAO.getOneCompany(companyID);
             ArrayList<Coupon> coupons = getCompanyCoupons();
 
-            for (Coupon coupon : coupons) {
-                if (coupon.getId() == couponID) {
-
-                    coupons.remove(coupon);
+            if (COUPON_DAO.isCouponExists(couponID)) {
+                    coupons.remove(COUPON_DAO.getOneCoupon(couponID));
                     COUPON_DAO.deleteCoupon(couponID);
-                    break;
-                }
+                    COUPON_DAO.deleteCouponPurchase(couponID);
+                    company.setCoupons(coupons);
+                    COMPANIES_DAO.updateCompany(company);
+            } else {
+                throw new FacadeException("Coupon with ID " + couponID + " doesn't exist in company ");
             }
-
-            COUPON_DAO.deleteCouponPurchase(couponID);
-
-            company.setCoupons(coupons);
-            COMPANIES_DAO.updateCompany(company);
         } catch (DAOException e) {
             throw new FacadeException("Can't delete coupon: ", e);
         }
@@ -143,16 +118,7 @@ public class CompanyFacade extends ClientFacade {
      */
     public ArrayList<Coupon> getCompanyCoupons() throws FacadeException {
         try {
-            ArrayList<Coupon> coupons = COUPON_DAO.getAllCoupons();
-            ArrayList<Coupon> new_coupons = new ArrayList<>();
-
-            for (Coupon coupon : coupons) {
-                if (coupon.getCompanyID() == companyID) {
-                    new_coupons.add(coupon);
-                }
-            }
-
-            return new_coupons;
+            return COUPON_DAO.getAllCompanyCoupons(companyID);
         } catch (DAOException e) {
             throw new FacadeException(e);
         }
@@ -164,16 +130,7 @@ public class CompanyFacade extends ClientFacade {
      */
     public ArrayList<Coupon> getCompanyCoupons(Category category) throws FacadeException {
         try {
-            ArrayList<Coupon> coupons = COUPON_DAO.getAllCoupons();
-            ArrayList<Coupon> new_coupons = new ArrayList<>();
-
-            for (Coupon coupon : coupons) {
-                if (coupon.getCompanyID() == companyID && coupon.getCategory() == category) {
-                    new_coupons.add(coupon);
-                }
-            }
-
-            return new_coupons;
+            return COUPON_DAO.getAllCompanyCoupons(companyID,category);
         } catch (DAOException e) {
             throw new FacadeException(e);
         }
@@ -185,16 +142,7 @@ public class CompanyFacade extends ClientFacade {
      */
     public ArrayList<Coupon> getCompanyCoupons(double maxPrice) throws FacadeException {
         try {
-            ArrayList<Coupon> coupons = COUPON_DAO.getAllCoupons();
-            ArrayList<Coupon> new_coupons = new ArrayList<>();
-
-            for (Coupon coupon : coupons) {
-                if (coupon.getCompanyID() == companyID & coupon.getPrice() < maxPrice) {
-                    new_coupons.add(coupon);
-                }
-            }
-
-            return new_coupons;
+            return COUPON_DAO.getAllCompanyCoupons(companyID,maxPrice);
         } catch (DAOException e) {
             throw new FacadeException(e);
         }
